@@ -33,7 +33,7 @@
 <meta property="og:image" content="https://note.youdao.com/yws/api/personal/file/WEBce37f1a66d12bb258f1333b105d04537?method=download&shareKey=4595b73eeadbf75b159af024985bcd99">
 <meta property="og:image" content="https://pica.zhimg.com/v2-0cbb8d7df835d25ebc9657d18e3b65b4_r.jpg?source=c8b7c179">
 <meta property="article:published_time" content="2023-05-18T16:00:00.000Z">
-<meta property="article:modified_time" content="2023-06-12T11:29:18.981Z">
+<meta property="article:modified_time" content="2023-07-11T12:27:46.186Z">
 <meta property="article:author" content="小王(Comrade Wang)">
 <meta property="article:tag" content="Profile">
 <meta name="twitter:card" content="summary">
@@ -234,7 +234,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-12 19:29:18" itemprop="dateModified" datetime="2023-06-12T19:29:18+08:00">2023-06-12</time>
+                <time title="修改时间：2023-07-11 20:27:46" itemprop="dateModified" datetime="2023-07-11T20:27:46+08:00">2023-07-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -288,15 +288,15 @@ img {
 <li>National University of Defense Technology (Master)</li>
 </ul>
 <p>  <strong>Major</strong>: Computer science and technology </p>
-<p>  <strong>Birthday</strong>：August, 1999  <strong>Telephone</strong>：182-2994-5747  <strong>Email</strong>：<a href="mailto:&#x77;&#114;&#x71;&#50;&#48;&#x32;&#49;&#64;&#x6e;&#117;&#x64;&#116;&#x2e;&#x65;&#100;&#x75;&#x2e;&#99;&#x6e;">&#x77;&#114;&#x71;&#50;&#48;&#x32;&#49;&#64;&#x6e;&#117;&#x64;&#116;&#x2e;&#x65;&#100;&#x75;&#x2e;&#99;&#x6e;</a></p>
+<p>  <strong>Birthday</strong>：August, 1999  <strong>Telephone</strong>：182-2994-5747  <strong>Email</strong>：<a href="mailto:&#119;&#114;&#x71;&#x32;&#48;&#x32;&#x31;&#x40;&#110;&#x75;&#x64;&#116;&#46;&#101;&#x64;&#x75;&#46;&#x63;&#110;">&#119;&#114;&#x71;&#x32;&#48;&#x32;&#x31;&#x40;&#110;&#x75;&#x64;&#116;&#46;&#101;&#x64;&#x75;&#46;&#x63;&#110;</a></p>
 <p>  <a href="https://csodyssey.github.io/2023/05/19/profile/">中文版简历</a></p>
   </p>
 </div>
 
 
 <h2 id="Research-Areas"><a href="#Research-Areas" class="headerlink" title="Research Areas"></a>Research Areas</h2><ul>
-<li>Domain-specific Accelerators</li>
-<li>High-performance Networks and Microarchitecture</li>
+<li>Domain-specific Accelerators for Distributed Deep Learning and Parallel Computing</li>
+<li>High-performance Networks: RDMA Networks, Router Microarchitecture and RDMA NICs.</li>
 <li>Parallel and Distributed Computing</li>
 </ul>
 <h2 id="Educational-Experience"><a href="#Educational-Experience" class="headerlink" title="Educational Experience"></a>Educational Experience</h2><p><strong>2021.9 ~ Present: National University of Defense Technology, Computer Science and Technology, Master Student</strong></p>
@@ -323,21 +323,11 @@ img {
 <li><p>Aoxiang Feng, Dezun Dong, Fei Lei, Junchao Ma, Enda Yu and <em><strong>Ruiqi Wang</strong></em>. 2022. <a target="_blank" rel="noopener" href="https://doi-org-s.libyc.nudt.edu.cn/10.1016/j.comcom.2022.11.004">In-network aggregation for data center networks: A survey.</a> In Computer Communications.</p>
 </li>
 </ul>
-<h2 id="Project-and-Research-Experience"><a href="#Project-and-Research-Experience" class="headerlink" title="Project and Research Experience"></a>Project and Research Experience</h2><h3 id="1-Master’s-Thesis-In-Network-Computing-Acceleration-for-Parallel-and-Distributed-Applications"><a href="#1-Master’s-Thesis-In-Network-Computing-Acceleration-for-Parallel-and-Distributed-Applications" class="headerlink" title="1. Master’s Thesis: In-Network Computing Acceleration for Parallel and Distributed Applications"></a>1. Master’s Thesis: In-Network Computing Acceleration for Parallel and Distributed Applications</h3><ul>
-<li><p>Summary: Designing <em><strong>Roar</strong></em> (A <u><strong>Ro</strong></u>uter Microarchitecture for In-network <u><strong>A</strong></u>ll<u><strong>r</strong></u>educe).</p>
-</li>
-<li><p>Keywords: In-network Computing, Allreduce, Router, RDMA.</p>
-</li>
-<li><p>The <em>allreduce</em> operation collects data from all hosts and then broadcasts the aggregated results back to them. Traditional methods rely on hosts for data aggregation, requiring the repeated transmission and aggregation of data between hosts. This consumes a significant amount of host resources and places a heavy traffic burden on the system. In-network computing can offload <em>allreduce</em> into network devices, which can improve performance by at least 2x. In this thesis, we introduce a groundbreaking solution named <em><strong>Roar</strong></em>, which is tailored for RDMA networks. Only packets requiring aggregation are intercepted by <em><strong>Roar</strong></em>. Once aggregated, the results are sent back to the router input units and routed to the next hop. This work has been published at the <em><strong>2023 International Conference on Supercomputing</strong></em> (<em><strong>ICS’23</strong></em>).<br><img src="https://note.youdao.com/yws/api/personal/file/WEBce37f1a66d12bb258f1333b105d04537?method=download&shareKey=4595b73eeadbf75b159af024985bcd99" alt="Roar&#39;s Architecture"></p>
-</li>
-<li><p>Innovation Highlights:</p>
-<ul>
-<li>A new router microarchitecture that includes an integrated accelerator. This accelerator is built on the foundation of an RDMA NIC. As an extension to router, <em><strong>Roar</strong></em> does not affect its regular functions.</li>
-<li><em><strong>Roar</strong></em> is tailored for RDMA networks and achieves high throughput.</li>
-<li>A series of optimization to address several challenges in in-network allreduce, including high throughput, large message aggregation, result reproducibility, and balancing performance and cost.</li>
+<h2 id="Project-and-Research-Experience"><a href="#Project-and-Research-Experience" class="headerlink" title="Project and Research Experience"></a>Project and Research Experience</h2><h3 id="1-Master’s-Thesis-Domain-specific-Accelerator-for-Distributed-Deep-Learning-and-Parallel-Computing"><a href="#1-Master’s-Thesis-Domain-specific-Accelerator-for-Distributed-Deep-Learning-and-Parallel-Computing" class="headerlink" title="1. Master’s Thesis: Domain-specific Accelerator for Distributed Deep Learning and Parallel Computing"></a>1. Master’s Thesis: Domain-specific Accelerator for Distributed Deep Learning and Parallel Computing</h3><ul>
+<li>Summary: Designing <em><strong>Roar</strong></em> (A <u><strong>Ro</strong></u>uter Microarchitecture for In-network <u><strong>A</strong></u>ll<u><strong>r</strong></u>educe).</li>
+<li>The <em>allreduce</em> operation collects data from all hosts and then broadcasts the aggregated results back to them. In-network computing can offload <em>allreduce</em> into network devices, which can improve the performance by at least 2x. In this work, we integrate an in-network accelerator in the standard router. The architecture is tailored for implementation on RDMA networks. Only packets requiring aggregation are intercepted by Roar’s unit. Once aggregated, the results are sent back to the router input units and routed to the next hop. This work has been published at the <em><strong>2023 International Conference on Supercomputing</strong></em> (<em><strong>ICS’23</strong></em>).</li>
 </ul>
-</li>
-</ul>
+<p><img src="https://note.youdao.com/yws/api/personal/file/WEBce37f1a66d12bb258f1333b105d04537?method=download&shareKey=4595b73eeadbf75b159af024985bcd99" alt="Roar&#39;s Architecture"></p>
 <h3 id="2-Fixed-wing-Reconnaissance-and-Strike-UAV-in-2019-Chinese-Aircraft-Design-Challenge"><a href="#2-Fixed-wing-Reconnaissance-and-Strike-UAV-in-2019-Chinese-Aircraft-Design-Challenge" class="headerlink" title="2. Fixed-wing Reconnaissance and Strike UAV, in 2019 Chinese Aircraft Design Challenge."></a>2. Fixed-wing Reconnaissance and Strike UAV, in 2019 Chinese Aircraft Design Challenge.</h3><ul>
 <li><p>Summary: Designing an automatic cruising reconnaissance and strike unmanned aerial vehicle (UAV).</p>
 </li>
@@ -453,7 +443,7 @@ img {
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Basic-Information"><span class="nav-number">1.</span> <span class="nav-text">Basic Information</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Research-Areas"><span class="nav-number">2.</span> <span class="nav-text">Research Areas</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Educational-Experience"><span class="nav-number">3.</span> <span class="nav-text">Educational Experience</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Paper-Publications"><span class="nav-number">4.</span> <span class="nav-text">Paper Publications</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Project-and-Research-Experience"><span class="nav-number">5.</span> <span class="nav-text">Project and Research Experience</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Master%E2%80%99s-Thesis-In-Network-Computing-Acceleration-for-Parallel-and-Distributed-Applications"><span class="nav-number">5.1.</span> <span class="nav-text">1. Master’s Thesis: In-Network Computing Acceleration for Parallel and Distributed Applications</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Fixed-wing-Reconnaissance-and-Strike-UAV-in-2019-Chinese-Aircraft-Design-Challenge"><span class="nav-number">5.2.</span> <span class="nav-text">2. Fixed-wing Reconnaissance and Strike UAV, in 2019 Chinese Aircraft Design Challenge.</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Basic-Information"><span class="nav-number">1.</span> <span class="nav-text">Basic Information</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Research-Areas"><span class="nav-number">2.</span> <span class="nav-text">Research Areas</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Educational-Experience"><span class="nav-number">3.</span> <span class="nav-text">Educational Experience</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Paper-Publications"><span class="nav-number">4.</span> <span class="nav-text">Paper Publications</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Project-and-Research-Experience"><span class="nav-number">5.</span> <span class="nav-text">Project and Research Experience</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Master%E2%80%99s-Thesis-Domain-specific-Accelerator-for-Distributed-Deep-Learning-and-Parallel-Computing"><span class="nav-number">5.1.</span> <span class="nav-text">1. Master’s Thesis: Domain-specific Accelerator for Distributed Deep Learning and Parallel Computing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Fixed-wing-Reconnaissance-and-Strike-UAV-in-2019-Chinese-Aircraft-Design-Challenge"><span class="nav-number">5.2.</span> <span class="nav-text">2. Fixed-wing Reconnaissance and Strike UAV, in 2019 Chinese Aircraft Design Challenge.</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
