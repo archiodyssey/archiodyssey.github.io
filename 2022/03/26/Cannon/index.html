@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Consolas:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"csodyssey.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="该文章主要介绍并行矩阵乘法的经典算法：Cannon矩阵乘法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cannon矩阵乘法">
+<meta property="og:url" content="http://csodyssey.github.io/2022/03/26/Cannon/index.html">
+<meta property="og:site_name" content="A CS Student&#39;s Odyssey">
+<meta property="og:description" content="该文章主要介绍并行矩阵乘法的经典算法：Cannon矩阵乘法">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/d00915586a8d405c973cfd0903f821b7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/4e1f8ac94d8e4de89df2fbd4707042fa.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/8b687e17cec04361b3581c9ba7c50838.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/af16cd39d9ef459b96bdef69b410355b.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/643bf8d4f65c444288bc7e7eae8314fd.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_35,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/26b328173bcf48a1bb1d0c38f6439597.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/bf1ed6fdf2b64112bb938e070825e933.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center">
+<meta property="article:published_time" content="2022-03-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-04-10T13:21:46.106Z">
+<meta property="article:author" content="小王(Comrade Wang)">
+<meta property="article:tag" content="MPI">
+<meta property="article:tag" content="并行计算">
+<meta property="article:tag" content="并行算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/d00915586a8d405c973cfd0903f821b7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center">
+
+<link rel="canonical" href="http://csodyssey.github.io/2022/03/26/Cannon/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Cannon矩阵乘法 | A CS Student's Odyssey</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">A CS Student's Odyssey</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://csodyssey.github.io/2022/03/26/Cannon/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="小王(Comrade Wang)">
+      <meta itemprop="description" content="喜欢造飞机、导弹和计算机的大学生 (A graduate student who enjoys buidling airplanes, missiles and computers)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="A CS Student's Odyssey">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Cannon矩阵乘法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-26T00:00:00+08:00">2022-03-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-10 21:21:46" itemprop="dateModified" datetime="2022-04-10T21:21:46+08:00">2022-04-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/" itemprop="url" rel="index"><span itemprop="name">并行计算</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/MPI%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%B9%B6%E8%A1%8C%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">MPI程序设计与并行算法</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">该文章主要介绍并行矩阵乘法的经典算法：Cannon矩阵乘法</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>$Cannon$算法是并行矩阵乘法的经典算法，将多个处理器排列成二维网格，采用二维块划分的方法将矩阵分给不同的处理器计算各自的局部结果，以此来加速计算。在本文中，为方便起见，示例程序中的矩阵均为$n$阶方阵，处理器的数量为2的幂次，确保每个矩阵得到的局部矩阵的元素个数相同。</p>
+<h1 id="一、二维矩阵串行乘法"><a href="#一、二维矩阵串行乘法" class="headerlink" title="一、二维矩阵串行乘法"></a>一、二维矩阵串行乘法</h1><p>两个$n$维方阵的乘法$A \cdot B &#x3D; C$的串行计算公式为：<br>$$ C_{ij} &#x3D; \sum_{k&#x3D;0}^{n-1} A_{ik} \cdot B_{kj},. $$<br>程序可以表示为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">Multiply</span><span class="params">(<span class="type">double</span>* A, <span class="type">double</span>* B, <span class="type">double</span>* C, <span class="type">int</span> n)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; n; k++)</span><br><span class="line">				C[i * n + j] += A[i * n + k] * B[j + k * n];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序将二维矩阵用一维矩阵线性展开，用一维数组来模拟二维数组。</p>
+<h1 id="二、Cannon算法"><a href="#二、Cannon算法" class="headerlink" title="二、Cannon算法"></a>二、Cannon算法</h1><p>并行化二维矩阵乘法的一种思想是二维块划分方法，将$p,$ 个进程（$p,$为完全平方数）排列成$\sqrt[]{p}\times\sqrt[]{p},$二维网格，然后将矩阵$A、B、C,$都分成$\sqrt[]{p}\times\sqrt[]{p},$ 块，均匀分布在网格上，矩阵第$(i,j),$个子块分别记为$A_{ij},$、$B_{ij},$、$C_{ij},$，存储在二维进程网格上坐标为$(i,j),$的进程$P_{ij},$上。计算$C_{ij},$时要将$A_{ik},$(第$i,$行进程上的所有$A,$的子块)和$B_{kj},$(第$j,$列进程上的所有$B,$的子块)都收集到进程$P_{ij},$上，再计算$C_{ij},$，公式可以表达为：<br>$$C_{ij} &#x3D; \sum_{k&#x3D;0}^{\sqrt[]{p}-1} A_{ik} \cdot B_{kj}$$<br>如下图所示：<br><img src="https://img-blog.csdnimg.cn/d00915586a8d405c973cfd0903f821b7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="二维块划分"></p>
+<p>然而每一个进程都重复收集$A_{ik},$和$B_{kj},$会造成空间的大量浪费，时间效率也比较低，于是有了更高效的$Canon,$算法，其表达式为：<br>$$C_{ij} &#x3D; \sum_{k&#x3D;0}^{\sqrt[]{p}-1} A_{i,(i+j+k)%\sqrt[]{p}} \cdot B_{(i+j+k)%\sqrt[]{p},j}$$</p>
+<p>$Canon,$算法基本思想是，每一个进程只存储$A,$、$B,$、$C,$矩阵的一个子块，本地相对应的$A,$、$B,$子块相乘后将结果累加到本地$C,$子块上，然后再与其他进程交换$A,$、$B,$子块，继续相乘将结果累加到本地$C,$子块上。但是要保证对应的$A,$、$B,$子块相乘，不能错位，我们注意到，在最开始，$P_{ij},$上的$A,$为所在行的第$j,$个，$B,$为所在列的第$i,$个，$A,$和$B,$子块并不对应，因此将一行上的$A,$子块循环向左移动$i,$格，一列上的$B,$子块循环向上移动$j,$格，这样$A,$和$B,$子块就能对应了，以后每执行一次计算，每行所有$A,$子块循环向左移动1格，每列上的$B,$子块循环向上移动1格，$A,$、$B,$子块相乘的结果累加在本地的$C,$子块上。<br><img src="https://img-blog.csdnimg.cn/4e1f8ac94d8e4de89df2fbd4707042fa.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="排列"></p>
+<p>算法的个步骤表示如下：</p>
+<h2 id="1、第一次重排列"><a href="#1、第一次重排列" class="headerlink" title="1、第一次重排列"></a>1、第一次重排列</h2><p>$k&#x3D;0$时，$A_{i,(i+j)%\sqrt[]{p}}$并不处于$P_{ij},$上，需要对齐，于是$A_{i,(i+j)%\sqrt[]{p}}$传送到$P_{ij},$上，具体的实现方式是，二维网格上每一行的进程都将$A,$子块循环向左移位，第$i,$行的所有进程将$A,$子块循环向左移位$i,$个单位；同时$B_{(i+j)%\sqrt[]{p},j}$并不处于$P_{ij},$上，$B_{(i+j)%\sqrt[]{p},j}$传送到$P_{ij},$上，第$j,$列的所有进程将$B,$子块循环向上移位$j,$个单位，如下图所示：<br><img src="https://img-blog.csdnimg.cn/8b687e17cec04361b3581c9ba7c50838.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="初始排列"><br>得到的第一次重排列后的矩阵排列为：<br><img src="https://img-blog.csdnimg.cn/af16cd39d9ef459b96bdef69b410355b.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="第一次重排列后"><br>每个进程得到初次重排列后的$A,$、$B,$子块后，将$A,$、$B,$子块相乘的结果累加在本地的$C,$子块上。</p>
+<h2 id="2、后续重排列"><a href="#2、后续重排列" class="headerlink" title="2、后续重排列"></a>2、后续重排列</h2><p>以后每进行一次计算，每行进程的$A,$子块都循环向左移动一个单位，每列进程的$B,$子块都循环的向上移动一个单位，如下图所示，$A,$、$B,$子块相乘的结果累加在本地的$C,$子块上，该步骤重复$\sqrt[]{p}-1,$次。<br><img src="https://img-blog.csdnimg.cn/643bf8d4f65c444288bc7e7eae8314fd.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_35,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="重排列"><br>最后进程$P_{ij},$上能够得到本地的结果$C_{ij},$。</p>
+<h1 id="三、程序实现"><a href="#三、程序实现" class="headerlink" title="三、程序实现"></a>三、程序实现</h1><h2 id="1、创建二维进程拓扑结构"><a href="#1、创建二维进程拓扑结构" class="headerlink" title="1、创建二维进程拓扑结构"></a>1、创建二维进程拓扑结构</h2><p>创建进程二维拓扑结构的函数为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dims[<span class="number">0</span>] = dims[<span class="number">1</span>] = <span class="built_in">sqrt</span>(comm_size);</span><br><span class="line">periods[<span class="number">0</span>] = periods[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">MPI_Cart_create(MPI_COMM_WORLD, <span class="number">2</span>, dims, periods, <span class="number">1</span>, &amp;comm_2d);</span><br></pre></td></tr></table></figure>
+<p>$comm_size,$为进程的总数量，$dims[2],$数组表示二维拓扑结构中每一维的大小，$period[2],$全部设置成1，表示拓扑结构的第$i,$维有环绕接。这样我们得到了新的进程通讯器$comm_2d,$。由于每一个进程都会被分配一个进程号以及进程坐标，从进程号获取进程坐标的函数如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MPI_Cart_coords(comm_2d, myrank, <span class="number">2</span>, mycoords);</span><br></pre></td></tr></table></figure>
+<p>$myrank,$是进程序号，$mycoords,$是大小为2的一维数组。</p>
+<h2 id="2、输入输出矩阵"><a href="#2、输入输出矩阵" class="headerlink" title="2、输入输出矩阵"></a>2、输入输出矩阵</h2><p>输入输出矩阵均为$8\times8,$矩阵，$A,$、$B,$矩阵均为正交矩阵，且$B&#x3D;A^{T},$，$A,$矩阵为：<br><img src="https://img-blog.csdnimg.cn/26b328173bcf48a1bb1d0c38f6439597.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_30,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="A矩阵"><br>计算结果应该可以得到一个单位矩阵。</p>
+<h2 id="3、主程序"><a href="#3、主程序" class="headerlink" title="3、主程序"></a>3、主程序</h2><p>每个进程保存的本地矩阵子块分别为$local_A,$、$local_B,$、$local_C,$，方便起见，进程的数量设为1、4、16、64这4种情况中的一种。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;math.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;mpi.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> pi acos(-1)</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> myrank, comm_size, srcrank, dstrank;</span><br><span class="line"><span class="type">int</span> dims[<span class="number">2</span>], periods[<span class="number">2</span>], mycoords[<span class="number">2</span>], coords[<span class="number">2</span>];</span><br><span class="line"><span class="type">int</span> n = <span class="number">8</span>, local_n;</span><br><span class="line">MPI_Comm comm_2d;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Multiply</span><span class="params">(<span class="type">double</span>* A, <span class="type">double</span>* B, <span class="type">double</span>* C, <span class="type">int</span> n)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">GenerateData</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_A, <span class="type">double</span>* local_B)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">Cannon</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_A, <span class="type">double</span>* local_B, <span class="type">double</span>* local_C)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">GatherResult</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_C)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">double</span>* local_A, * local_B, * local_C;</span><br><span class="line"></span><br><span class="line">	MPI_Init(<span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">	MPI_Comm_size(MPI_COMM_WORLD, &amp;comm_size);</span><br><span class="line">	MPI_Comm_rank(MPI_COMM_WORLD, &amp;myrank);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (myrank == <span class="number">0</span>) <span class="built_in">printf</span>(<span class="string">&quot;Number of Process: %d\n&quot;</span>, comm_size);</span><br><span class="line"></span><br><span class="line">	<span class="type">double</span> start = MPI_Wtime();</span><br><span class="line">	</span><br><span class="line">	dims[<span class="number">0</span>] = dims[<span class="number">1</span>] = <span class="built_in">sqrt</span>(comm_size);</span><br><span class="line">	periods[<span class="number">0</span>] = periods[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">	MPI_Cart_create(MPI_COMM_WORLD, <span class="number">2</span>, dims, periods, <span class="number">1</span>, &amp;comm_2d);</span><br><span class="line"></span><br><span class="line">	MPI_Comm_rank(comm_2d, &amp;myrank);</span><br><span class="line">	MPI_Cart_coords(comm_2d, myrank, <span class="number">2</span>, mycoords);</span><br><span class="line"></span><br><span class="line">	local_n = n / dims[<span class="number">0</span>];</span><br><span class="line">	local_A = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	local_B = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	local_C = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	<span class="built_in">memset</span>(local_A, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	<span class="built_in">memset</span>(local_B, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	<span class="built_in">memset</span>(local_C, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">	</span><br><span class="line">	GenerateData(comm_2d, local_A, local_B);</span><br><span class="line">	Cannon(comm_2d, local_A, local_B, local_C);</span><br><span class="line">	GatherResult(comm_2d, local_C);</span><br><span class="line"></span><br><span class="line">	<span class="type">double</span> end = MPI_Wtime();</span><br><span class="line">	<span class="keyword">if</span>(myrank == <span class="number">0</span>) <span class="built_in">printf</span>(<span class="string">&quot;Running time: %.2f seconds...\n&quot;</span>, end - start);</span><br><span class="line"></span><br><span class="line">	MPI_Comm_free(&amp;comm_2d);</span><br><span class="line">	MPI_Finalize();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4、Cannon算法主函数"><a href="#4、Cannon算法主函数" class="headerlink" title="4、Cannon算法主函数"></a>4、Cannon算法主函数</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">Cannon</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_A, <span class="type">double</span>* local_B, <span class="type">double</span>* local_C)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> uprank, downrank, leftrank, rightrank;</span><br><span class="line">	MPI_Status status;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//计算左边一格的（目标）进程序号leftrank，和右边一格的（源）进程序号rightrank</span></span><br><span class="line">	coords[<span class="number">0</span>] = mycoords[<span class="number">0</span>];</span><br><span class="line">	coords[<span class="number">1</span>] = (mycoords[<span class="number">1</span>] - <span class="number">1</span>) % dims[<span class="number">1</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;leftrank);</span><br><span class="line">	coords[<span class="number">1</span>] = (mycoords[<span class="number">1</span>] + <span class="number">1</span>) % dims[<span class="number">1</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;rightrank);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//计算向上一格的（目标）进程序号uprank，和向下一格的（源）进程序号downrank</span></span><br><span class="line">	coords[<span class="number">0</span>] = (mycoords[<span class="number">0</span>] - <span class="number">1</span>) % dims[<span class="number">0</span>];</span><br><span class="line">	coords[<span class="number">1</span>] = mycoords[<span class="number">1</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;uprank);</span><br><span class="line">	coords[<span class="number">0</span>] = (mycoords[<span class="number">0</span>] + <span class="number">1</span>) % dims[<span class="number">0</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;downrank);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//A矩阵第一次重排列</span></span><br><span class="line">	coords[<span class="number">0</span>] = mycoords[<span class="number">0</span>];</span><br><span class="line">	coords[<span class="number">1</span>] = (mycoords[<span class="number">1</span>] - mycoords[<span class="number">0</span>]) % dims[<span class="number">1</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;dstrank);</span><br><span class="line">	coords[<span class="number">1</span>] = (mycoords[<span class="number">1</span>] + mycoords[<span class="number">0</span>]) % dims[<span class="number">1</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;srcrank);</span><br><span class="line">	<span class="keyword">if</span> (myrank != dstrank)</span><br><span class="line">	&#123;</span><br><span class="line">		MPI_Sendrecv_replace(local_A, local_n * local_n, MPI_DOUBLE, dstrank, <span class="number">0</span>, srcrank, <span class="number">0</span>, comm_2d, &amp;status);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//B矩阵第一次重排列</span></span><br><span class="line">	coords[<span class="number">1</span>] = mycoords[<span class="number">1</span>];</span><br><span class="line">	coords[<span class="number">0</span>] = (mycoords[<span class="number">0</span>] - mycoords[<span class="number">1</span>]) % dims[<span class="number">0</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;dstrank);</span><br><span class="line">	coords[<span class="number">0</span>] = (mycoords[<span class="number">0</span>] + mycoords[<span class="number">1</span>]) % dims[<span class="number">0</span>];</span><br><span class="line">	MPI_Cart_rank(comm_2d, coords, &amp;srcrank);</span><br><span class="line">	<span class="keyword">if</span> (myrank != dstrank)</span><br><span class="line">	&#123;</span><br><span class="line">		MPI_Sendrecv_replace(local_B, local_n * local_n, MPI_DOUBLE, dstrank, <span class="number">0</span>, srcrank, <span class="number">0</span>, comm_2d, &amp;status);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	Multiply(local_A, local_B, local_C, local_n);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> time = <span class="number">0</span>; time &lt; dims[<span class="number">0</span>] - <span class="number">1</span>; time++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//local_A循环往左滚动一格</span></span><br><span class="line">		MPI_Sendrecv_replace(local_A, local_n * local_n, MPI_DOUBLE, leftrank, <span class="number">0</span>, rightrank, <span class="number">0</span>, comm_2d, &amp;status);</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//local_B循环往上滚动一个</span></span><br><span class="line">		MPI_Sendrecv_replace(local_B, local_n * local_n, MPI_DOUBLE, uprank, <span class="number">0</span>, downrank, <span class="number">0</span>, comm_2d, &amp;status);</span><br><span class="line"></span><br><span class="line">		Multiply(local_A, local_B, local_C, local_n);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Multiply</span><span class="params">(<span class="type">double</span>* A, <span class="type">double</span>* B, <span class="type">double</span>* C, <span class="type">int</span> n)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; n; k++)</span><br><span class="line">			&#123;</span><br><span class="line">				C[i * n + j] += A[i * n + k] * B[j + k * n];</span><br><span class="line">				Sleep(<span class="number">10</span>);</span><br><span class="line">			&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中$MPI_Cart_rank,$用于将进程坐标转换为进程号，$MPI_Sendrecv_replace,$函数可以视为$MPI_Send$以及$MPI_Recv,$函数的组合，用于在一个绕接环中，每一个进程向目标进程$dstrank$发送数据，并接受来自$srcrank$源进程的数据，并且在收发数据中所有进程使用的都是同一个缓存。使用该函数可以实现$A$、$B$子块的循环移位。</p>
+<h2 id="5、生成数据并分发到各进程的函数"><a href="#5、生成数据并分发到各进程的函数" class="headerlink" title="5、生成数据并分发到各进程的函数"></a>5、生成数据并分发到各进程的函数</h2><p>0号进程将$A$、$B$矩阵的数据放入$bufferA$、$bufferB$中再发送给对应进程的$local_A$、$local_B$中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">GenerateData</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_A, <span class="type">double</span>* local_B)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (mycoords[<span class="number">0</span>] == <span class="number">0</span> &amp;&amp; mycoords[<span class="number">1</span>] == <span class="number">0</span>)			<span class="comment">//0号进程生成和发送数据</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">double</span> A[<span class="number">8</span> * <span class="number">8</span>] = &#123;</span><br><span class="line">		<span class="built_in">cos</span>(pi / <span class="number">6</span>), -<span class="built_in">sin</span>(pi / <span class="number">6</span>), <span class="number">0</span>, <span class="number">0</span> , <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="built_in">sin</span>(pi / <span class="number">6</span>), <span class="built_in">cos</span>(pi / <span class="number">6</span>), <span class="number">0</span>, <span class="number">0</span> , <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="built_in">cos</span>(pi / <span class="number">4</span>), -<span class="built_in">sin</span>(pi / <span class="number">4</span>), <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="built_in">sin</span>(pi / <span class="number">4</span>), <span class="built_in">cos</span>(pi / <span class="number">4</span>), <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="built_in">cos</span>(pi / <span class="number">6</span>), -<span class="built_in">sin</span>(pi / <span class="number">6</span>), <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="built_in">sin</span>(pi / <span class="number">6</span>), <span class="built_in">cos</span>(pi / <span class="number">6</span>), <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="built_in">cos</span>(pi / <span class="number">4</span>),  -<span class="built_in">sin</span>(pi / <span class="number">4</span>),</span><br><span class="line">		<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="built_in">sin</span>(pi / <span class="number">4</span>), <span class="built_in">cos</span>(pi / <span class="number">4</span>),</span><br><span class="line">		&#125;;</span><br><span class="line"></span><br><span class="line">		<span class="type">double</span>* B = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * n * n);</span><br><span class="line">		<span class="built_in">memset</span>(B, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * n * n);</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">				B[j * n + i] = A[i * n + j];</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; local_n; i++)</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; local_n; j++)</span><br><span class="line">			&#123;</span><br><span class="line">				local_A[i * local_n + j] = A[i * n + j];</span><br><span class="line">				local_B[i * local_n + j] = B[i * n + j];</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> row = <span class="number">0</span>; row &lt; dims[<span class="number">0</span>]; row++)</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> col = <span class="number">0</span>; col &lt; dims[<span class="number">1</span>]; col++)</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="keyword">if</span> (row == <span class="number">0</span> &amp;&amp; col == <span class="number">0</span>) <span class="keyword">continue</span>;		<span class="comment">//0号进程</span></span><br><span class="line">				<span class="comment">//offset是坐标为(row,col)进程对应的A、B子块的第一个元素在A、B矩阵中的下标</span></span><br><span class="line">				<span class="type">int</span> offset = row * dims[<span class="number">1</span>] * local_n * local_n + col * local_n;</span><br><span class="line">				<span class="type">double</span>* bufferA = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">				<span class="type">double</span>* bufferB = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line"></span><br><span class="line">				<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; local_n; i++)</span><br><span class="line">					<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; local_n; j++)</span><br><span class="line">					&#123;</span><br><span class="line">						bufferA[i * local_n + j] = A[offset + i * n + j];</span><br><span class="line">						bufferB[i * local_n + j] = B[offset + i * n + j];</span><br><span class="line">					&#125;</span><br><span class="line"></span><br><span class="line">				coords[<span class="number">0</span>] = row;</span><br><span class="line">				coords[<span class="number">1</span>] = col;</span><br><span class="line">				MPI_Cart_rank(comm_2d, coords, &amp;dstrank);</span><br><span class="line">				MPI_Send(bufferA, local_n * local_n, MPI_DOUBLE, dstrank, <span class="number">0</span>, comm_2d);</span><br><span class="line">				MPI_Send(bufferB, local_n * local_n, MPI_DOUBLE, dstrank, <span class="number">1</span>, comm_2d);</span><br><span class="line">				<span class="built_in">free</span>(bufferA);</span><br><span class="line">				<span class="built_in">free</span>(bufferB);</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="built_in">free</span>(B);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		MPI_Recv(local_A, local_n * local_n, MPI_DOUBLE, <span class="number">0</span>, <span class="number">0</span>, comm_2d, MPI_STATUS_IGNORE);</span><br><span class="line">		MPI_Recv(local_B, local_n * local_n, MPI_DOUBLE, <span class="number">0</span>, <span class="number">1</span>, comm_2d, MPI_STATUS_IGNORE);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="6、收集结果到0号进程的函数"><a href="#6、收集结果到0号进程的函数" class="headerlink" title="6、收集结果到0号进程的函数"></a>6、收集结果到0号进程的函数</h2><p>所有进程将计算结果（本地$C$子块的数据）放入$bufferC$中发送给0号进程，0号进程收集$bufferC$中的数据放入$C$矩阵的对应位置中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">GatherResult</span><span class="params">(MPI_Comm comm_2d, <span class="type">double</span>* local_C)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> otherrank;</span><br><span class="line">	MPI_Status status;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (coords[<span class="number">0</span>] == <span class="number">0</span> &amp;&amp; coords[<span class="number">1</span>] == <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">double</span>* C = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * n * n);</span><br><span class="line">		<span class="built_in">memset</span>(C, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * n * n);</span><br><span class="line">		<span class="type">double</span>* bufferC = (<span class="type">double</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">		<span class="built_in">memset</span>(bufferC, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="type">double</span>) * local_n * local_n);</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> row = <span class="number">0</span>; row &lt; dims[<span class="number">0</span>]; row++)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> col = <span class="number">0</span>; col &lt; dims[<span class="number">1</span>]; col++)</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="keyword">if</span> (row == <span class="number">0</span> &amp;&amp; col == <span class="number">0</span>)</span><br><span class="line">				&#123;</span><br><span class="line">					<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; local_n; i++)</span><br><span class="line">						<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; local_n; j++)</span><br><span class="line">							C[i * n + j] = local_C[i * local_n + j];</span><br><span class="line">					<span class="keyword">continue</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				coords[<span class="number">0</span>] = row;</span><br><span class="line">				coords[<span class="number">1</span>] = col;</span><br><span class="line">				MPI_Cart_rank(comm_2d, coords, &amp;otherrank);</span><br><span class="line">				MPI_Recv(bufferC, local_n * local_n, MPI_DOUBLE, otherrank, <span class="number">0</span>, comm_2d, &amp;status);</span><br><span class="line">				<span class="type">int</span> offset = row * dims[<span class="number">1</span>] * local_n * local_n + col * local_n;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; local_n; i++)</span><br><span class="line">					<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; local_n; j++)</span><br><span class="line">						C[offset + i * n + j] = bufferC[i * local_n + j];</span><br><span class="line">					</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">free</span>(bufferC);</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j++)</span><br><span class="line">				<span class="built_in">printf</span>(<span class="string">&quot;%.2f &quot;</span>, C[i * n + j]);</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		MPI_Send(local_C, local_n * local_n, MPI_DOUBLE, <span class="number">0</span>, <span class="number">0</span>, comm_2d);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="四、实现结果"><a href="#四、实现结果" class="headerlink" title="四、实现结果"></a>四、实现结果</h1><p>程序在$VS2019$上运行，可以看到随着进程数量的增加，$0$号进程的运行时间明显减少（显示器上显示的执行时间是$0$号进程的执行时间）。但是当进程增加到原来的$n$倍，$0$号进程的运行时间并不为原来的$\frac{1}{n}$，这一方面是因为$0$号进程需要与更多的进程点对点发送$A$、$B$矩阵的数据，另一个重要原因是我的电脑为$Intel$ $8$核$CPU$，最多只能有$8$个进程同时运行，因此会有$64-8&#x3D;56$个进程会在等待队列和就绪队列上等待被$CPU$调度，影响总程序运行时间。但是多个进程确实明显加速了矩阵乘法。<br><img src="https://img-blog.csdnimg.cn/bf1ed6fdf2b64112bb938e070825e933.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5qWa5Zu95Luk5bC5,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center" alt="在这里插入图片描述"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MPI/" rel="tag"># MPI</a>
+              <a href="/tags/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/" rel="tag"># 并行计算</a>
+              <a href="/tags/%E5%B9%B6%E8%A1%8C%E7%AE%97%E6%B3%95/" rel="tag"># 并行算法</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/27/MPI_Allreduce_Summary/" rel="next" title="MPI_Allreduce的前世今生">
+      MPI_Allreduce的前世今生 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%BA%8C%E7%BB%B4%E7%9F%A9%E9%98%B5%E4%B8%B2%E8%A1%8C%E4%B9%98%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">一、二维矩阵串行乘法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81Cannon%E7%AE%97%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">二、Cannon算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E7%AC%AC%E4%B8%80%E6%AC%A1%E9%87%8D%E6%8E%92%E5%88%97"><span class="nav-number">2.1.</span> <span class="nav-text">1、第一次重排列</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81%E5%90%8E%E7%BB%AD%E9%87%8D%E6%8E%92%E5%88%97"><span class="nav-number">2.2.</span> <span class="nav-text">2、后续重排列</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%A8%8B%E5%BA%8F%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">三、程序实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E5%88%9B%E5%BB%BA%E4%BA%8C%E7%BB%B4%E8%BF%9B%E7%A8%8B%E6%8B%93%E6%89%91%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">1、创建二维进程拓扑结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E7%9F%A9%E9%98%B5"><span class="nav-number">3.2.</span> <span class="nav-text">2、输入输出矩阵</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3%E3%80%81%E4%B8%BB%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.3.</span> <span class="nav-text">3、主程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4%E3%80%81Cannon%E7%AE%97%E6%B3%95%E4%B8%BB%E5%87%BD%E6%95%B0"><span class="nav-number">3.4.</span> <span class="nav-text">4、Cannon算法主函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5%E3%80%81%E7%94%9F%E6%88%90%E6%95%B0%E6%8D%AE%E5%B9%B6%E5%88%86%E5%8F%91%E5%88%B0%E5%90%84%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%87%BD%E6%95%B0"><span class="nav-number">3.5.</span> <span class="nav-text">5、生成数据并分发到各进程的函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6%E3%80%81%E6%94%B6%E9%9B%86%E7%BB%93%E6%9E%9C%E5%88%B00%E5%8F%B7%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%87%BD%E6%95%B0"><span class="nav-number">3.6.</span> <span class="nav-text">6、收集结果到0号进程的函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E7%8E%B0%E7%BB%93%E6%9E%9C"><span class="nav-number">4.</span> <span class="nav-text">四、实现结果</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="小王(Comrade Wang)"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">小王(Comrade Wang)</p>
+  <div class="site-description" itemprop="description">喜欢造飞机、导弹和计算机的大学生 (A graduate student who enjoys buidling airplanes, missiles and computers)</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/csodyssey" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;csodyssey" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wrq2021@nudt.edu.cn" title="E-Mail → wrq2021@nudt.edu.cn"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://www.zhihu.com/people/pu-ti-shan-cheng-zhu" title="知乎主页 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;pu-ti-shan-cheng-zhu" rel="noopener" target="_blank"><i class="fab fa-zhihu fa-fw"></i>知乎主页</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://blog.csdn.net/qq_44115917?spm=1000.2115.3001.5343" title="CSDN → https:&#x2F;&#x2F;blog.csdn.net&#x2F;qq_44115917?spm&#x3D;1000.2115.3001.5343" rel="noopener" target="_blank"><i class="fab fa-csdn fa-fw"></i>CSDN</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小王(Comrade Wang)</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
