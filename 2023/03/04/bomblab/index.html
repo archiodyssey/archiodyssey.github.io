@@ -22,19 +22,20 @@
     var CONFIG = {"hostname":"csodyssey.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="二进制炸弹实验实验的内容是，对给定的可执行文件，输入指定的字符串，然后程序正常退出。由于源程序未知，因此需要反汇编将可执行文件生成汇编程序，再通过汇编程序逆向分析出源程序。程序由多个关卡组成，如果每一个关卡输入的字符串错误，炸弹就会爆炸，程序异常退出。 第一关：字符串比较C程序123input &#x3D; read_line();                &#x2F;* Get input">
+  <meta name="description" content="该实验的内容主要为根据可执行文件反汇编生成的汇编代码，逆向推测出C源程序的功能，得到C程序的结构。根据汇编代码推测出C源程序的switch结构、递归函数、单链表、二叉树等。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="A CS Student&#39;s Odyssey">
-<meta property="og:url" content="http://csodyssey.github.io/2023/10/06/bomblab/index.html">
+<meta property="og:title" content="二进制炸弹实验">
+<meta property="og:url" content="http://csodyssey.github.io/2023/03/04/bomblab/index.html">
 <meta property="og:site_name" content="A CS Student&#39;s Odyssey">
-<meta property="og:description" content="二进制炸弹实验实验的内容是，对给定的可执行文件，输入指定的字符串，然后程序正常退出。由于源程序未知，因此需要反汇编将可执行文件生成汇编程序，再通过汇编程序逆向分析出源程序。程序由多个关卡组成，如果每一个关卡输入的字符串错误，炸弹就会爆炸，程序异常退出。 第一关：字符串比较C程序123input &#x3D; read_line();                &#x2F;* Get input">
+<meta property="og:description" content="该实验的内容主要为根据可执行文件反汇编生成的汇编代码，逆向推测出C源程序的功能，得到C程序的结构。根据汇编代码推测出C源程序的switch结构、递归函数、单链表、二叉树等。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2023-10-06T12:05:16.375Z">
-<meta property="article:modified_time" content="2023-10-03T09:25:09.427Z">
+<meta property="article:published_time" content="2023-03-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-10-06T12:12:55.692Z">
 <meta property="article:author" content="小王(Comrade Wang)">
+<meta property="article:tag" content="体系结构">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://csodyssey.github.io/2023/10/06/bomblab/">
+<link rel="canonical" href="http://csodyssey.github.io/2023/03/04/bomblab/">
 
 
 <script id="page-configurations">
@@ -47,7 +48,7 @@
   };
 </script>
 
-  <title> | A CS Student's Odyssey</title>
+  <title>二进制炸弹实验 | A CS Student's Odyssey</title>
   
 
 
@@ -199,7 +200,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://csodyssey.github.io/2023/10/06/bomblab/">
+    <link itemprop="mainEntityOfPage" href="http://csodyssey.github.io/2023/03/04/bomblab/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.png">
@@ -212,7 +213,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          
+          二进制炸弹实验
         </h1>
 
         <div class="post-meta">
@@ -222,15 +223,28 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2023-10-06 20:05:16" itemprop="dateCreated datePublished" datetime="2023-10-06T20:05:16+08:00">2023-10-06</time>
+              <time title="创建时间：2023-03-04 00:00:00" itemprop="dateCreated datePublished" datetime="2023-03-04T00:00:00+08:00">2023-03-04</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-10-03 17:25:09" itemprop="dateModified" datetime="2023-10-03T17:25:09+08:00">2023-10-03</time>
+                <time title="修改时间：2023-10-06 20:12:55" itemprop="dateModified" datetime="2023-10-06T20:12:55+08:00">2023-10-06</time>
               </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" itemprop="url" rel="index"><span itemprop="name">计算机基础知识</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">体系结构</span></a>
+                </span>
+            </span>
 
           
             <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
@@ -240,6 +254,7 @@
               <span class="post-meta-item-text">阅读次数：</span>
               <span id="busuanzi_value_page_pv"></span>
             </span>
+            <div class="post-description">该实验的内容主要为根据可执行文件反汇编生成的汇编代码，逆向推测出C源程序的功能，得到C程序的结构。根据汇编代码推测出C源程序的switch结构、递归函数、单链表、二叉树等。</div>
 
         </div>
       </header>
@@ -481,6 +496,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/" rel="tag"># 体系结构</a>
+          </div>
 
         
 
@@ -488,10 +506,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2023/07/28/publications/" rel="prev" title="Wang's Publications">
-      <i class="fa fa-chevron-left"></i> Wang's Publications
+    <a href="/2022/05/18/OS_FileSystem/" rel="prev" title="文件系统概念和Ext2文件系统">
+      <i class="fa fa-chevron-left"></i> 文件系统概念和Ext2文件系统
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/19/profile_en/" rel="next" title="Wang's Personal Resume">
+      Wang's Personal Resume <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -573,13 +594,13 @@
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -708,6 +729,59 @@
   
 
   
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
 
   
 
